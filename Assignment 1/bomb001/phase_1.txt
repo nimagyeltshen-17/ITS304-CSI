@@ -1,0 +1,190 @@
+Microsoft Windows [Version 10.0.19042.1237]
+(c) Microsoft Corporation. All rights reserved.
+
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from bomb...
+(gdb) b phase_1
+Breakpoint 1 at 0x400e8d
+(gdb) disas
+(gdb) run
+
+Welcome to my fiendish little bomb. You have 6 phases with
+which to blow yourself up. Have a nice day!
+test string
+
+Breakpoint 1, 0x0000000000400e8d in phase_1 ()
+(gdb) disas
+Dump of assembler code for function phase_1:
+=> 0x0000000000400e8d <+0>:     sub    $0x8,%rsp
+   0x0000000000400e91 <+4>:     mov    $0x4023d0,%esi 		//what is this being moved to register %esi?
+   0x0000000000400e96 <+9>:     callq  0x40133e <strings_not_equal> 	//will compare the input string to the answer
+   0x0000000000400e9b <+14>:    test   %eax,%eax
+   0x0000000000400e9d <+16>:    je     0x400ea4 <phase_1+23>
+   0x0000000000400e9f <+18>:    callq  0x40143d <explode_bomb>
+   0x0000000000400ea4 <+23>:    add    $0x8,%rsp
+   0x0000000000400ea8 <+27>:    retq
+End of assembler dump.
+(gdb) ni
+0x0000000000400e91 in phase_1 ()
+(gdb) disas
+Dump of assembler code for function phase_1:
+   0x0000000000400e8d <+0>:     sub    $0x8,%rsp
+=> 0x0000000000400e91 <+4>:     mov    $0x4023d0,%esi
+   0x0000000000400e96 <+9>:     callq  0x40133e <strings_not_equal>
+   0x0000000000400e9b <+14>:    test   %eax,%eax
+   0x0000000000400e9d <+16>:    je     0x400ea4 <phase_1+23>
+   0x0000000000400e9f <+18>:    callq  0x40143d <explode_bomb>
+   0x0000000000400ea4 <+23>:    add    $0x8,%rsp
+   0x0000000000400ea8 <+27>:    retq
+End of assembler dump.
+
+//Let's see what's being moved from 0x4023d0 to register % esi. We know it has to be some kind of string. So we use x/s 0x4023d0 to check the value of address 0x4023d0.
+
+(gdb) x/s 0x4023d0
+0x4023d0:       "The moon unit will be divided into two divisions."
+
+//So this string is being moved into %esi.
+
+(gdb) disas
+Dump of assembler code for function phase_1:
+   0x0000000000400e8d <+0>:     sub    $0x8,%rsp
+=> 0x0000000000400e91 <+4>:     mov    $0x4023d0,%esi
+   0x0000000000400e96 <+9>:     callq  0x40133e <strings_not_equal>
+   0x0000000000400e9b <+14>:    test   %eax,%eax
+   0x0000000000400e9d <+16>:    je     0x400ea4 <phase_1+23>
+   0x0000000000400e9f <+18>:    callq  0x40143d <explode_bomb>
+   0x0000000000400ea4 <+23>:    add    $0x8,%rsp
+   0x0000000000400ea8 <+27>:    retq
+End of assembler dump.
+(gdb) ni
+(gdb) disas
+Dump of assembler code for function phase_1:
+   0x0000000000400e8d <+0>:     sub    $0x8,%rsp
+   0x0000000000400e91 <+4>:     mov    $0x4023d0,%esi
+=> 0x0000000000400e96 <+9>:     callq  0x40133e <strings_not_equal>
+   0x0000000000400e9b <+14>:    test   %eax,%eax
+   0x0000000000400e9d <+16>:    je     0x400ea4 <phase_1+23>
+   0x0000000000400e9f <+18>:    callq  0x40143d <explode_bomb>
+   0x0000000000400ea4 <+23>:    add    $0x8,%rsp
+   0x0000000000400ea8 <+27>:    retq
+End of assembler dump.
+(gdb) ni
+0x0000000000400e9b in phase_1 ()
+(gdb) disas
+Dump of assembler code for function phase_1:
+   0x0000000000400e8d <+0>:     sub    $0x8,%rsp
+   0x0000000000400e91 <+4>:     mov    $0x4023d0,%esi
+   0x0000000000400e96 <+9>:     callq  0x40133e <strings_not_equal>
+=> 0x0000000000400e9b <+14>:    test   %eax,%eax
+   0x0000000000400e9d <+16>:    je     0x400ea4 <phase_1+23>
+   0x0000000000400e9f <+18>:    callq  0x40143d <explode_bomb>
+   0x0000000000400ea4 <+23>:    add    $0x8,%rsp
+   0x0000000000400ea8 <+27>:    retq
+End of assembler dump.
+
+// When we look at % eax, we see that it equals 1. Because value 1 in the test function does not satisfy the condition, the bomb will be declared to explode.
+(gdb) i r
+rax            0x1                 1
+rbx            0x4021f0            4202992
+rcx            0xb                 11
+rdx            0x1                 1
+rsi            0x4023d0            4203472
+rdi            0x402401            4203521
+rbp            0x0                 0x0
+rsp            0x7ffffffee190      0x7ffffffee190
+r8             0x6037a0            6305696
+r9             0x0                 0
+r10            0xfffffffffffff6ed  -2323
+r11            0x7fffff5e7400      140737477768192
+r12            0x400c60            4197472
+r13            0x7ffffffee290      140737488282256
+r14            0x0                 0
+r15            0x0                 0
+rip            0x400e9b            0x400e9b <phase_1+14>
+eflags         0x283               [ CF SF IF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+
+// Try using the string we found in the disassembler code and see what the % eax value is:
+"The moon unit will be divided into two divisions."
+
+(gdb) run
+The program being debugged has been started already.
+Start it from the beginning? (y or n) y
+Welcome to my fiendish little bomb. You have 6 phases with
+which to blow yourself up. Have a nice day!
+The moon unit will be divided into two divisions.
+
+Breakpoint 1, 0x0000000000400e8d in phase_1 ()
+(gdb) disas
+Dump of assembler code for function phase_1:
+=> 0x0000000000400e8d <+0>:     sub    $0x8,%rsp
+   0x0000000000400e91 <+4>:     mov    $0x4023d0,%esi
+   0x0000000000400e96 <+9>:     callq  0x40133e <strings_not_equal>
+   0x0000000000400e9b <+14>:    test   %eax,%eax
+   0x0000000000400e9d <+16>:    je     0x400ea4 <phase_1+23>
+   0x0000000000400e9f <+18>:    callq  0x40143d <explode_bomb>
+   0x0000000000400ea4 <+23>:    add    $0x8,%rsp
+   0x0000000000400ea8 <+27>:    retq
+End of assembler dump.
+(gdb) ni 3
+0x0000000000400e9b in phase_1 ()
+(gdb) disas
+Dump of assembler code for function phase_1:
+   0x0000000000400e8d <+0>:     sub    $0x8,%rsp
+   0x0000000000400e91 <+4>:     mov    $0x4023d0,%esi
+   0x0000000000400e96 <+9>:     callq  0x40133e <strings_not_equal>
+=> 0x0000000000400e9b <+14>:    test   %eax,%eax
+   0x0000000000400e9d <+16>:    je     0x400ea4 <phase_1+23>
+   0x0000000000400e9f <+18>:    callq  0x40143d <explode_bomb>
+   0x0000000000400ea4 <+23>:    add    $0x8,%rsp
+   0x0000000000400ea8 <+27>:    retq
+End of assembler dump.
+(gdb) i r
+rax            0x0                 0 		// % rax or eax 0! This means it will execute the command explode bomb.
+rbx            0x4021f0            4202992
+rcx            0x31                49
+rdx            0x0                 0
+rsi            0x4023d0            4203472
+rdi            0x402401            4203521
+rbp            0x0                 0x0
+rsp            0x7ffffffee190      0x7ffffffee190
+r8             0x6037a0            6305696
+r9             0x0                 0
+r10            0xfffffffffffff6ed  -2323
+r11            0x7fffff5e7400      140737477768192
+r12            0x400c60            4197472
+r13            0x7ffffffee290      140737488282256
+r14            0x0                 0
+r15            0x0                 0
+rip            0x400e9b            0x400e9b <phase_1+14>
+eflags         0x246               [ PF ZF IF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+(gdb) u*  0x0000000000400ea8
+main (argc=<optimized out>, argv=<optimized out>) at bomb.c:75
+75          phase_defused();                 /* Drat!  They figured it out!
+(gdb)
+
+So the answer for this phase is The moon unit will be divided into two divisions.
+
